@@ -10,7 +10,7 @@ En desarrollo iterativo. Progreso actual:
 - [x] **Fase 2**: Detección de manos y landmarks (MediaPipe HandLandmarker, Tasks API)
 - [x] **Fase 3**: Máquina de estados para reconocimiento de gestos (gesto de pellizco -> clic)
 - [x] **Fase 4**: Sistema de perfiles (YAML) y mapeo de acciones
-- [ ] Fase 5: Detección de aplicación activa y cambio automático de perfil
+- [x] **Fase 5**: Detección de aplicación activa y cambio automático de perfil (Windows)
 - [ ] Fase 6: HUD visual, calibración de usuario, suavizado de cursor
 - [ ] Fase 7: Tests, CI, documentación final
 
@@ -66,6 +66,22 @@ tocar código.
 python main.py --profile presentation
 python main.py --profile mouse --dry-run   # imprime la acción sin ejecutarla
 ```
+
+## Detección automática de perfil (Windows)
+
+Sin `--profile`, VisionAI detecta qué aplicación tiene el foco y carga el
+perfil correspondiente solo, según `config/app_profiles.yaml` (proceso en
+primer plano -> perfil; `default` cubre cualquier app no listada):
+
+```bash
+python main.py               # detección automática
+python main.py --profile mouse   # fuerza un perfil fijo, desactiva la detección
+```
+
+`src/profiles/app_detector.py` usa `pywin32` para leer la ventana activa y
+`psutil` para resolver el nombre del proceso; consulta el sistema como mucho
+una vez por segundo (`AppProfileDetector.poll`), no en cada frame. Esta pieza
+es específica de Windows por ahora.
 
 ## Requisitos
 

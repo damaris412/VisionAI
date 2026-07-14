@@ -1,0 +1,8 @@
+# Mapea el nombre del proceso en primer plano (en minúsculas) al perfil que
+# se debe cargar automáticamente. "default" se usa cuando el proceso activo
+# no aparece en esta lista.
+powerpnt.exe: presentation
+vlc.exe: media
+wmplayer.exe: media
+spotify.exe: media
+default: mouse
