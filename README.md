@@ -11,7 +11,7 @@ En desarrollo iterativo. Progreso actual:
 - [x] **Fase 3**: Máquina de estados para reconocimiento de gestos (gesto de pellizco -> clic)
 - [x] **Fase 4**: Sistema de perfiles (YAML) y mapeo de acciones
 - [x] **Fase 5**: Detección de aplicación activa y cambio automático de perfil (Windows)
-- [ ] Fase 6: HUD visual, calibración de usuario, suavizado de cursor
+- [x] **Fase 6**: HUD visual, calibración de usuario, suavizado de cursor, gesto de swipe
 - [ ] Fase 7: Tests, CI, documentación final
 
 ## Arquitectura
@@ -45,17 +45,25 @@ es **pellizco (pulgar + índice) → clic**, con la distancia normalizada por el
 tamaño de la palma para que el umbral no dependa de qué tan cerca está la mano
 de la cámara.
 
+`src/gestures/swipe_detector.py` reconoce un segundo tipo de gesto: **swipe**
+(deslizar la mano abierta de un lado al otro). A diferencia del pellizco (una
+señal estática por frame), el swipe es un patrón de movimiento — se trackea la
+posición X de la muñeca en una ventana corta de frames y se dispara solo si el
+desplazamiento neto supera un umbral en menos de esa ventana, con su propio
+cooldown para no repetirse mientras la mano sigue en movimiento.
+
 ## Perfiles y acciones
 
 El mismo gesto significa cosas distintas según el **perfil** activo — la
 lógica de reconocimiento nunca sabe qué acción dispara, solo emite el nombre
 del gesto. Los perfiles viven en `config/profiles/*.yaml`:
 
-| Perfil | `pinch` dispara |
-|---|---|
-| `mouse` (default) | Clic izquierdo |
-| `presentation` | Avanzar diapositiva |
-| `media` | Play/Pause |
+| Perfil | Gesto | Acción |
+|---|---|---|
+| `mouse` (default) | Pellizco | Clic izquierdo |
+| `mouse` (default) | Índice (continuo) | Mover cursor |
+| `presentation` | Swipe derecha/izquierda | Avanzar/retroceder diapositiva |
+| `media` | Pellizco | Play/Pause |
 
 `src/profiles/profile_loader.py` carga el YAML; `src/actions/controller.py`
 traduce el nombre de acción a la llamada real de `pyautogui`. Ambos están
@@ -83,6 +91,35 @@ python main.py --profile mouse   # fuerza un perfil fijo, desactiva la detecció
 una vez por segundo (`AppProfileDetector.poll`), no en cada frame. Esta pieza
 es específica de Windows por ahora.
 
+## Control de cursor: calibración y suavizado
+
+En el perfil `mouse`, la punta del índice mueve el cursor del sistema. Dos
+piezas hacen que esto se sienta usable en vez de errático:
+
+- **Calibración** (`src/gestures/calibration.py`): al iniciar, una pantalla
+  guía al usuario a mover el índice por su zona cómoda de movimiento durante
+  unos segundos. Esa zona (no el cuadro completo de la cámara) es la que se
+  mapea a la pantalla completa, para no tener que estirar el brazo hasta el
+  borde de la cámara para llegar a la esquina de la pantalla. `--skip-calibration`
+  usa una zona por defecto razonable sin pasar por ese paso.
+- **Suavizado** (`src/actions/cursor_smoother.py`): un promedio móvil
+  exponencial sobre la posición mapeada, para que el temblor normal de la
+  detección de landmarks no se traduzca en un cursor que salta de un pixel a
+  otro en vez de deslizarse.
+
+`ActionController.move_cursor` además recorta la posición final a un par de
+pixels de cada borde de la pantalla: PyAutoGUI aborta con una excepción si el
+cursor llega *exactamente* a una esquina (su mecanismo de "fail-safe" para que
+el usuario recupere el control moviendo el mouse real) — el recorte evita que
+el mapeo por gestos genere esa coordenada exacta, sin desactivar el fail-safe.
+
+## HUD
+
+`src/hud/overlay.py` centraliza el overlay de depuración/feedback: barra de
+estado (FPS, perfil, estado del gesto, frames descartados), etiqueta de
+lateralidad por mano, marca del punto que controla el cursor, y el flash de
+"ACCION!" al confirmarse un gesto.
+
 ## Requisitos
 
 - Python 3.11–3.13 (MediaPipe aún no soporta 3.14 al momento de escribir esto)
@@ -99,7 +136,10 @@ pip install -r requirements.txt
 ## Uso
 
 ```bash
-python main.py
+python main.py                       # detección automática de perfil, con calibración
+python main.py --profile mouse       # fuerza el perfil mouse
+python main.py --dry-run             # imprime acciones y no mueve el cursor/mouse real
+python main.py --skip-calibration    # usa una zona de cursor por defecto
 ```
 
 Presiona `q` para salir.

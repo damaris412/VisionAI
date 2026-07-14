@@ -1,4 +1,6 @@
 name: presentation
-description: Control de presentaciones - pellizco para avanzar diapositiva
+description: Control de presentaciones - desliza la mano abierta para cambiar de diapositiva
 gestures:
+  swipe_right: presentation_next_slide
+  swipe_left: presentation_previous_slide
   pinch: presentation_next_slide

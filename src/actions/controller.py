@@ -12,6 +12,14 @@ _ACTIONS: dict[str, Callable[[], None]] = {
     "media_play_pause": lambda: pyautogui.press("playpause"),
 }
 
+# PyAutoGUI aborta con una excepción si el cursor llega exactamente a una
+# esquina de la pantalla (su mecanismo de "fail-safe" para que el usuario
+# pueda recuperar el control moviendo el mouse real a una esquina). Este
+# margen evita que el mapeo por gestos genere esa coordenada exacta, sin
+# desactivar el fail-safe: el usuario siempre puede seguir usando su mouse
+# físico para llegar a la esquina real y abortar.
+_SCREEN_EDGE_MARGIN = 2
+
 
 class ActionController:
     """Ejecuta acciones del sistema operativo a partir de un nombre lógico.
@@ -30,3 +38,11 @@ class ActionController:
         if self._dry_run:
             return
         _ACTIONS[action_name]()
+
+    def move_cursor(self, x: int, y: int) -> None:
+        if self._dry_run:
+            return
+        screen_w, screen_h = pyautogui.size()
+        safe_x = min(max(x, _SCREEN_EDGE_MARGIN), screen_w - _SCREEN_EDGE_MARGIN)
+        safe_y = min(max(y, _SCREEN_EDGE_MARGIN), screen_h - _SCREEN_EDGE_MARGIN)
+        pyautogui.moveTo(safe_x, safe_y, _pause=False)
