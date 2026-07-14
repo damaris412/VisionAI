@@ -9,6 +9,7 @@ def test_loads_mouse_profile():
     assert profile.name == "mouse"
     assert profile.action_for("pinch") == "mouse_click_left"
     assert profile.cursor_control is True
+    assert profile.pointer_control is False
 
 
 def test_loads_presentation_profile():
@@ -19,6 +20,7 @@ def test_loads_presentation_profile():
     assert profile.action_for("swipe_left") == "presentation_previous_slide"
     assert profile.action_for("pinch") == "presentation_next_slide"
     assert profile.cursor_control is False
+    assert profile.pointer_control is True
 
 
 def test_loads_media_profile():
@@ -27,6 +29,7 @@ def test_loads_media_profile():
     assert profile.name == "media"
     assert profile.action_for("pinch") == "media_play_pause"
     assert profile.cursor_control is False
+    assert profile.pointer_control is False
 
 
 def test_action_for_unknown_gesture_returns_none():

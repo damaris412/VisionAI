@@ -7,8 +7,8 @@ import pyautogui
 from src.actions.controller import ActionController
 from src.actions.cursor_smoother import CursorSmoother
 from src.capture.camera_stream import CameraStream
-from src.gestures.calibration import DEFAULT_CALIBRATION, run_calibration
-from src.gestures.gesture_definitions import INDEX_FINGER_TIP, is_hand_open, is_pinching
+from src.gestures.calibration import DEFAULT_CALIBRATION, CalibrationResult, run_calibration
+from src.gestures.gesture_definitions import INDEX_FINGER_TIP, is_hand_open, is_pinching, is_pointing
 from src.gestures.gesture_state_machine import GestureStateMachine, StateMachineConfig
 from src.gestures.swipe_detector import SwipeDetector
 from src.hud import overlay
@@ -42,6 +42,27 @@ def parse_args() -> argparse.Namespace:
         help="Omite la calibracion de cursor y usa una zona cómoda por defecto",
     )
     return parser.parse_args()
+
+
+def _move_cursor_to_index_tip(
+    image,
+    hand,
+    calibration: CalibrationResult,
+    cursor_smoother: CursorSmoother,
+    controller: ActionController,
+    screen_w: int,
+    screen_h: int,
+) -> None:
+    """Mapea la punta del índice a la pantalla (vía calibración + suavizado),
+    mueve el cursor real y dibuja la marca del punto controlado. Comparten
+    esta lógica el perfil `mouse` (cursor_control, siempre activo con mano
+    visible) y `presentation` (pointer_control, solo mientras se apunta)."""
+    index_x, index_y = hand.landmarks[INDEX_FINGER_TIP][:2]
+    unit_x, unit_y = calibration.map_to_unit_square(index_x, index_y)
+    smooth_x, smooth_y = cursor_smoother.smooth(unit_x * screen_w, unit_y * screen_h)
+    controller.move_cursor(int(smooth_x), int(smooth_y))
+    cursor_pixel = (int(index_x * image.shape[1]), int(index_y * image.shape[0]))
+    overlay.draw_cursor_target(image, cursor_pixel)
 
 
 def main() -> None:
@@ -87,6 +108,7 @@ def main() -> None:
                 desired_profile_name = detector.poll(time.monotonic())
                 if desired_profile_name != profile.name:
                     profile = load_profile(desired_profile_name)
+                    cursor_smoother.reset()  # evita un salto usando la última posición del perfil anterior
                     print(f"Cambio automático de perfil -> {profile.name}")
 
             # Espejamos primero para mostrar una vista "selfie" natural, y
@@ -125,13 +147,12 @@ def main() -> None:
                     print(f"{prefix}[{profile.name}] {gesture_name} -> {action_name}")
                 action_flash_remaining = _ACTION_FLASH_FRAMES
 
-            if profile.cursor_control and hand is not None:
-                index_x, index_y = hand.landmarks[INDEX_FINGER_TIP][:2]
-                unit_x, unit_y = calibration.map_to_unit_square(index_x, index_y)
-                smooth_x, smooth_y = cursor_smoother.smooth(unit_x * screen_w, unit_y * screen_h)
-                controller.move_cursor(int(smooth_x), int(smooth_y))
-                cursor_pixel = (int(index_x * image.shape[1]), int(index_y * image.shape[0]))
-                overlay.draw_cursor_target(image, cursor_pixel)
+            # cursor_control mueve el cursor con solo tener una mano visible
+            # (perfil mouse); pointer_control (perfil presentation) exige
+            # además la seña de "apuntar", para no mover el puntero láser
+            # cada vez que la mano pasa por el cuadro sin intención de señalar.
+            if hand is not None and (profile.cursor_control or (profile.pointer_control and is_pointing(hand.landmarks))):
+                _move_cursor_to_index_tip(image, hand, calibration, cursor_smoother, controller, screen_w, screen_h)
 
             if hand is not None:
                 draw_hand(image, hand.landmarks)

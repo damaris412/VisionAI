@@ -22,6 +22,12 @@ _LONG_FINGER_JOINTS = (
     (PINKY_FINGER_TIP, PINKY_MCP),
 )
 
+_CURLED_FINGER_JOINTS = (
+    (MIDDLE_FINGER_TIP, MIDDLE_FINGER_MCP),
+    (RING_FINGER_TIP, RING_MCP),
+    (PINKY_FINGER_TIP, PINKY_MCP),
+)
+
 
 def _distance(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.linalg.norm(a[:2] - b[:2]))
@@ -52,3 +58,16 @@ def is_hand_open(landmarks: np.ndarray) -> bool:
         _distance(landmarks[tip], wrist) > _distance(landmarks[mcp], wrist)
         for tip, mcp in _LONG_FINGER_JOINTS
     )
+
+
+def is_pointing(landmarks: np.ndarray) -> bool:
+    """True si el índice está extendido y los demás dedos largos (medio,
+    anular, meñique) están curvados hacia la palma: la seña clásica de
+    "apuntar" con el dedo, distinta de la mano abierta usada para el swipe."""
+    wrist = landmarks[WRIST]
+    index_extended = _distance(landmarks[INDEX_FINGER_TIP], wrist) > _distance(landmarks[INDEX_MCP], wrist)
+    others_curled = all(
+        _distance(landmarks[tip], wrist) < _distance(landmarks[mcp], wrist)
+        for tip, mcp in _CURLED_FINGER_JOINTS
+    )
+    return index_extended and others_curled
