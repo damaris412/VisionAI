@@ -36,24 +36,35 @@ DEFAULT_CALIBRATION = CalibrationResult(min_x=0.2, max_x=0.8, min_y=0.2, max_y=0
 def run_calibration(
     camera: CameraStream,
     tracker: HandTracker,
+    start_time: float,
     duration_s: float = 4.0,
     window_name: str = "VisionAI - Calibracion",
 ) -> CalibrationResult:
     """Guía al usuario a mover el índice por su zona cómoda de movimiento
     durante `duration_s` segundos y devuelve esos límites, para mapear esa
-    zona (no el cuadro completo de la cámara) al área de la pantalla."""
+    zona (no el cuadro completo de la cámara) al área de la pantalla.
+
+    `start_time` debe ser la misma referencia de `time.monotonic()` que
+    después va a usar el loop principal para calcular sus timestamps: el
+    HandLandmarker (modo VIDEO) exige timestamps estrictamente crecientes a
+    lo largo de toda su vida útil, no solo dentro de esta función. Si la
+    calibración usara su propio reloj desde 0, el primer frame del loop
+    principal (con un timestamp menor, calculado desde un "cero" posterior)
+    haría que MediaPipe lance "Input timestamp must be monotonically
+    increasing" y el programa se cerrara apenas terminara de calibrar.
+    """
     min_x, max_x = 1.0, 0.0
     min_y, max_y = 1.0, 0.0
     seen_any = False
 
-    start = time.monotonic()
-    while time.monotonic() - start < duration_s:
+    calibration_start = time.monotonic()
+    while time.monotonic() - calibration_start < duration_s:
         frame = camera.read(timeout=1.0)
         if frame is None:
             continue
 
         image = cv2.flip(frame.image, 1)
-        timestamp_ms = int((time.monotonic() - start) * 1000)
+        timestamp_ms = int((time.monotonic() - start_time) * 1000)
         hands = tracker.process(image, timestamp_ms)
 
         if hands:
@@ -62,7 +73,7 @@ def run_calibration(
             min_y, max_y = min(min_y, y), max(max_y, y)
             seen_any = True
 
-        remaining = duration_s - (time.monotonic() - start)
+        remaining = duration_s - (time.monotonic() - calibration_start)
         cv2.putText(
             image,
             f"Calibrando: mueve el indice por tu zona comoda ({remaining:.1f}s)",
