@@ -25,6 +25,7 @@ VisionAI no necesita ninguna configuración especial para presentar:
 | Swipe derecha | Mano abierta (4 dedos extendidos), desplazar de izquierda a derecha | Avanzar diapositiva | `src/gestures/swipe_detector.py` |
 | Swipe izquierda | Mano abierta, desplazar de derecha a izquierda | Retroceder diapositiva | `src/gestures/swipe_detector.py` |
 | Pellizco (respaldo) | Pulgar + índice se tocan | Avanzar diapositiva | `src/gestures/gesture_definitions.py` |
+| Puntero/láser virtual | Solo índice extendido, resto curvado (`is_pointing`) | Mueve el cursor real, siguiendo la punta del índice | `is_pointing()` + `pointer_control` en `Profile` |
 
 **Nota de sensibilidad**: el swipe se calibró originalmente para uso "de
 escritorio" (25% del ancho del cuadro en 8 frames / ~0.27s), demasiado
@@ -36,7 +37,6 @@ vivo con este nuevo umbral.
 
 | Gesto | Cómo se hace | Acción propuesta | Notas de factibilidad |
 |---|---|---|---|
-| Puntero/láser virtual | Solo índice extendido, resto cerrado, apuntando a cámara | Mover un punto en pantalla que sigue el dedo, como puntero láser | Reutiliza el tracking de índice + calibración + suavizado que ya existen para el perfil `mouse`. PowerPoint tiene un modo láser nativo (mantener Ctrl + arrastrar con el mouse durante la presentación) que se podría combinar con el movimiento de cursor por gestos |
 | Zoom | Pellizco pulgar-índice que se abre (zoom in) o se cierra (zoom out) | Zoom sobre la diapositiva/imagen | **Sin solución universal todavía**: ni PowerPoint en modo presentación, ni Canva, ni Google Slides tienen un atajo de teclado estándar para zoom en vivo. Falta decidir la app objetivo y la acción exacta antes de implementar |
 | Doble "clic" con índice | Mover el índice hacia adelante y atrás dos veces rápido | Doble clic (reproducir/interactuar con un objeto de la diapositiva) | Necesita un detector nuevo, similar en espíritu a `SwipeDetector` pero midiendo desplazamiento en profundidad (Z) o un patrón de dos pulsos en vez de posición X |
 | Puño abrir/cerrar | Cerrar el puño y volver a abrir | Play/Pause de video embebido (tecla espacio) | Necesita `is_fist()` — el opuesto de `is_hand_open()`, incluyendo el pulgar curvado hacia la palma |
@@ -44,9 +44,8 @@ vivo con este nuevo umbral.
 ## Cómo continuar
 
 Cuando se retome este trabajo, priorizar en este orden sugerido:
-1. Ajustar sensibilidad del swipe existente (bajo esfuerzo, ya reportado como
-   necesario).
-2. Puntero/láser virtual (reutiliza código ya existente del perfil `mouse`).
+1. ~~Ajustar sensibilidad del swipe existente~~ — hecho.
+2. ~~Puntero/láser virtual~~ — hecho (`is_pointing()` + `pointer_control`).
 3. Puño para play/pause (gesto nuevo simple, geometría similar a `is_hand_open`).
 4. Doble clic con índice (gesto nuevo, requiere diseño de detector).
 5. Zoom (bloqueado hasta decidir una acción concreta y viable por app).
