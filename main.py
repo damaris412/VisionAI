@@ -7,6 +7,7 @@ from src.actions.controller import ActionController
 from src.capture.camera_stream import CameraStream
 from src.gestures.gesture_definitions import is_pinching
 from src.gestures.gesture_state_machine import GestureStateMachine, StateMachineConfig
+from src.profiles.app_detector import AppProfileDetector
 from src.profiles.profile_loader import load_profile
 from src.vision.hand_tracker import HandTracker
 from src.vision.landmark_utils import draw_hand
@@ -19,8 +20,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="VisionAI - control por gestos")
     parser.add_argument(
         "--profile",
-        default="mouse",
-        help="Perfil a cargar: mouse, presentation o media (default: mouse)",
+        default=None,
+        help=(
+            "Fuerza un perfil especifico (mouse, presentation, media) y "
+            "desactiva la deteccion automatica por aplicacion activa"
+        ),
     )
     parser.add_argument(
         "--dry-run",
@@ -32,9 +36,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    profile = load_profile(args.profile)
     controller = ActionController(dry_run=args.dry_run)
-    window_name = f"VisionAI - Perfil: {profile.name}" + (" [dry-run]" if args.dry_run else "")
+
+    auto_detect = args.profile is None
+    detector = AppProfileDetector() if auto_detect else None
+    profile = load_profile(detector.poll(time.monotonic()) if detector else args.profile)
+
+    window_name = (
+        "VisionAI - Deteccion automatica de perfil" if auto_detect else f"VisionAI - Perfil: {profile.name}"
+    )
+    if args.dry_run:
+        window_name += " [dry-run]"
 
     with (
         CameraStream(camera_index=0, width=1280, height=720, target_fps=30) as camera,
@@ -53,6 +65,12 @@ def main() -> None:
             if frame is None:
                 print("No se recibieron frames de la cámara (timeout). Saliendo.")
                 break
+
+            if detector is not None:
+                desired_profile_name = detector.poll(time.monotonic())
+                if desired_profile_name != profile.name:
+                    profile = load_profile(desired_profile_name)
+                    print(f"Cambio automático de perfil -> {profile.name}")
 
             # Espejamos primero para mostrar una vista "selfie" natural, y
             # detectamos sobre esa misma imagen espejada. MediaPipe estima
