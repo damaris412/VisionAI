@@ -14,6 +14,11 @@ En desarrollo iterativo. Progreso actual:
 - [x] **Fase 6**: HUD visual, calibración de usuario, suavizado de cursor, gesto de swipe
 - [ ] Fase 7: Tests, CI, documentación final
 
+Ver [docs/gestures_roadmap.md](docs/gestures_roadmap.md) para el roadmap de
+gestos pensados específicamente para exposiciones con diapositivas (puntero
+láser, zoom, doble clic, play/pause), notas de configuración HDMI/proyector, y
+ajustes de sensibilidad pendientes.
+
 ## Arquitectura
 
 ```
