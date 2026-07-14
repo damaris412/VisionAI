@@ -22,3 +22,6 @@ htmlcov/
 
 # Datos locales de calibración (por usuario, no se versiona)
 config/calibration.local.yaml
+
+# Modelos de ML descargados en el primer uso (ver src/vision/hand_tracker.py)
+models/

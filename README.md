@@ -7,7 +7,7 @@ Framework de control por gestos de mano en tiempo real, construido con Python, O
 En desarrollo iterativo. Progreso actual:
 
 - [x] **Fase 0-1**: Entorno + captura de video en hilo dedicado (productor-consumidor, sin acumulación de lag)
-- [ ] Fase 2: Detección de manos y landmarks (MediaPipe Hands)
+- [x] **Fase 2**: Detección de manos y landmarks (MediaPipe HandLandmarker, Tasks API)
 - [ ] Fase 3: Máquina de estados para reconocimiento de gestos
 - [ ] Fase 4: Sistema de perfiles (YAML) y mapeo de acciones
 - [ ] Fase 5: Detección de aplicación activa y cambio automático de perfil
@@ -19,7 +19,7 @@ En desarrollo iterativo. Progreso actual:
 ```
 src/
 ├── capture/    # Captura de cámara en hilo dedicado (camera_stream.py, frame_queue.py)
-├── vision/     # Wrapper de MediaPipe Hands, utilidades de landmarks
+├── vision/     # Wrapper de MediaPipe HandLandmarker, utilidades de landmarks
 ├── gestures/   # Máquina de estados + reglas geométricas de reconocimiento
 ├── profiles/   # Carga de perfiles YAML + detección de app activa
 ├── actions/    # Ejecución de acciones del SO (pyautogui) + suavizado de cursor
@@ -27,6 +27,13 @@ src/
 ```
 
 Cada gesto detectado se emite como un evento desacoplado de la acción que dispara — el mismo gesto puede significar cosas distintas según el perfil activo.
+
+## Modelos de IA
+
+`src/vision/hand_tracker.py` usa MediaPipe **HandLandmarker** (Tasks API) para
+detectar 21 puntos clave por mano. El modelo entrenado (~8 MB) se descarga
+automáticamente en `models/` la primera vez que se ejecuta — no se versiona en
+git, igual que los pesos de cualquier modelo de ML.
 
 ## Requisitos
 
