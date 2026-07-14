@@ -6,8 +6,13 @@ from dataclasses import dataclass
 
 @dataclass
 class SwipeConfig:
-    window_frames: int = 8
-    min_displacement: float = 0.25
+    # Pensado para uso "de pie, a distancia" (presentando frente a un
+    # proyector) en vez de sentado frente a la cámara: a mayor distancia de
+    # la cámara, el mismo movimiento de la mano cubre una fracción menor del
+    # cuadro, así que el umbral es más permisivo que un valor calibrado para
+    # uso de escritorio.
+    window_frames: int = 10
+    min_displacement: float = 0.15
     cooldown_frames: int = 20
 
 
