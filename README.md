@@ -9,7 +9,7 @@ En desarrollo iterativo. Progreso actual:
 - [x] **Fase 0-1**: Entorno + captura de video en hilo dedicado (productor-consumidor, sin acumulación de lag)
 - [x] **Fase 2**: Detección de manos y landmarks (MediaPipe HandLandmarker, Tasks API)
 - [x] **Fase 3**: Máquina de estados para reconocimiento de gestos (gesto de pellizco -> clic)
-- [ ] Fase 4: Sistema de perfiles (YAML) y mapeo de acciones
+- [x] **Fase 4**: Sistema de perfiles (YAML) y mapeo de acciones
 - [ ] Fase 5: Detección de aplicación activa y cambio automático de perfil
 - [ ] Fase 6: HUD visual, calibración de usuario, suavizado de cursor
 - [ ] Fase 7: Tests, CI, documentación final
@@ -44,6 +44,28 @@ define las reglas geométricas sobre los landmarks; el primer gesto implementado
 es **pellizco (pulgar + índice) → clic**, con la distancia normalizada por el
 tamaño de la palma para que el umbral no dependa de qué tan cerca está la mano
 de la cámara.
+
+## Perfiles y acciones
+
+El mismo gesto significa cosas distintas según el **perfil** activo — la
+lógica de reconocimiento nunca sabe qué acción dispara, solo emite el nombre
+del gesto. Los perfiles viven en `config/profiles/*.yaml`:
+
+| Perfil | `pinch` dispara |
+|---|---|
+| `mouse` (default) | Clic izquierdo |
+| `presentation` | Avanzar diapositiva |
+| `media` | Play/Pause |
+
+`src/profiles/profile_loader.py` carga el YAML; `src/actions/controller.py`
+traduce el nombre de acción a la llamada real de `pyautogui`. Ambos están
+desacoplados: agregar un perfil nuevo es solo agregar un archivo YAML, sin
+tocar código.
+
+```bash
+python main.py --profile presentation
+python main.py --profile mouse --dry-run   # imprime la acción sin ejecutarla
+```
 
 ## Requisitos
 

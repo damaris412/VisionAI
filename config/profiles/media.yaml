@@ -1,0 +1,4 @@
+name: media
+description: Control de reproductor multimedia - pellizco para play/pause
+gestures:
+  pinch: media_play_pause

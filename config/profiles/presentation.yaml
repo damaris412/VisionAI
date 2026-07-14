@@ -1,0 +1,4 @@
+name: presentation
+description: Control de presentaciones - pellizco para avanzar diapositiva
+gestures:
+  pinch: presentation_next_slide

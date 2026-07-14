@@ -1,0 +1,4 @@
+name: mouse
+description: Control de mouse - pellizco para clic izquierdo
+gestures:
+  pinch: mouse_click_left
