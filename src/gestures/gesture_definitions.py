@@ -41,11 +41,18 @@ def palm_size(landmarks: np.ndarray) -> float:
 
 
 def is_pinching(landmarks: np.ndarray, threshold_ratio: float = PINCH_THRESHOLD_RATIO) -> bool:
+    """True si el pulgar toca la punta del índice Y el dedo medio está
+    extendido. Un puño cerrado también deja el pulgar muy cerca del índice
+    curvado (geométricamente casi idéntico a un pellizco), así que exigir el
+    medio extendido es lo que distingue el pellizco intencional del puño."""
     scale = palm_size(landmarks)
     if scale == 0:
         return False
     pinch_distance = _distance(landmarks[THUMB_TIP], landmarks[INDEX_FINGER_TIP])
-    return (pinch_distance / scale) < threshold_ratio
+    if (pinch_distance / scale) >= threshold_ratio:
+        return False
+    wrist = landmarks[WRIST]
+    return _distance(landmarks[MIDDLE_FINGER_TIP], wrist) > _distance(landmarks[MIDDLE_FINGER_MCP], wrist)
 
 
 def is_hand_open(landmarks: np.ndarray) -> bool:
