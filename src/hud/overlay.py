@@ -35,15 +35,22 @@ def draw_hand_label(image: np.ndarray, wrist_pixel: tuple[int, int], label: str,
 
 
 def draw_action_flash(image: np.ndarray, text: str = "ACCION!") -> None:
-    cv2.putText(
-        image,
-        text,
-        (image.shape[1] // 2 - 120, 100),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        2.0,
-        _RED,
-        4,
-    )
+    """Centra el texto y reduce el tamaño de fuente si hace falta, para que
+    etiquetas largas (p. ej. "SIGUIENTE DIAPOSITIVA") no se salgan del cuadro
+    como pasaría con un tamaño fijo pensado solo para "ACCION!"."""
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    thickness = 4
+    max_width = image.shape[1] - 40
+
+    font_scale = 2.0
+    (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+    while text_w > max_width and font_scale > 0.5:
+        font_scale -= 0.1
+        (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+
+    x = (image.shape[1] - text_w) // 2
+    y = 60 + text_h
+    cv2.putText(image, text, (x, y), font, font_scale, _RED, thickness)
 
 
 def draw_cursor_target(image: np.ndarray, pixel: tuple[int, int]) -> None:
