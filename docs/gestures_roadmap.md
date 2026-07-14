@@ -24,14 +24,31 @@ VisionAI no necesita ninguna configuración especial para presentar:
 |---|---|---|---|
 | Swipe derecha | Mano abierta (4 dedos extendidos), desplazar de izquierda a derecha | Avanzar diapositiva | `src/gestures/swipe_detector.py` |
 | Swipe izquierda | Mano abierta, desplazar de derecha a izquierda | Retroceder diapositiva | `src/gestures/swipe_detector.py` |
-| Pellizco (respaldo) | Pulgar + índice se tocan | Avanzar diapositiva | `src/gestures/gesture_definitions.py` |
 | Puntero/láser virtual | Solo índice extendido, resto curvado (`is_pointing`) | Mueve el cursor real, siguiendo la punta del índice | `is_pointing()` + `pointer_control` en `Profile` |
+| Pellizco | Pulgar toca el índice, con el dedo medio extendido | Clic (para interactuar con algo donde se está apuntando) | `is_pinching()` |
 
 **Nota de sensibilidad**: el swipe se calibró originalmente para uso "de
 escritorio" (25% del ancho del cuadro en 8 frames / ~0.27s), demasiado
 exigente para presentar de pie y lejos de la cámara. Ajustado a
-`min_displacement=0.15`, `window_frames=10` — pendiente de volver a probar en
-vivo con este nuevo umbral.
+`min_displacement=0.15`, `window_frames=10`.
+
+**Bug corregido (uso real en vivo)**: el pellizco estaba mapeado como
+respaldo de "avanzar diapositiva", y un puño cerrado natural también deja el
+pulgar muy cerca del índice curvado — geométricamente casi idéntico a un
+pellizco. Resultado: cualquier gesto (pellizco intencional, puño, incluso
+gesticular al hablar) terminaba pasando diapositivas. Se corrigió en dos
+partes: (1) `is_pinching()` ahora también exige que el dedo medio esté
+extendido, lo que excluye el puño (donde el medio está curvado); (2) el
+pellizco ya no dispara "siguiente diapositiva" — solo el swipe lo hace. El
+pellizco ahora dispara clic, para poder interactuar con lo que se señala con
+el puntero.
+
+**Calibración del puntero**: si el cursor no va donde apuntás, probablemente
+la calibración inicial no recorrió bien tu zona de movimiento. La pantalla de
+calibración ahora dura 6s (antes 4s), pide explícitamente recorrer las 4
+esquinas del área donde vas a apuntar, y muestra un círculo en vivo sobre el
+punto que se está registrando para verificar que el tracking te sigue bien
+antes de empezar.
 
 ## Gestos propuestos (no implementados aún)
 

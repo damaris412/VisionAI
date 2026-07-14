@@ -18,7 +18,7 @@ def test_loads_presentation_profile():
     assert profile.name == "presentation"
     assert profile.action_for("swipe_right") == "presentation_next_slide"
     assert profile.action_for("swipe_left") == "presentation_previous_slide"
-    assert profile.action_for("pinch") == "presentation_next_slide"
+    assert profile.action_for("pinch") == "mouse_click_left"
     assert profile.cursor_control is False
     assert profile.pointer_control is True
 

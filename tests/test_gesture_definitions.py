@@ -53,12 +53,13 @@ def test_palm_size_is_distance_between_wrist_and_middle_mcp():
     assert palm_size(landmarks) == 0.5
 
 
-def test_is_pinching_true_when_fingertips_are_close_relative_to_palm():
+def test_is_pinching_true_when_pinching_with_middle_finger_extended():
     landmarks = make_landmarks()
     landmarks[WRIST] = (0.0, 0.0, 0.0)
     landmarks[MIDDLE_FINGER_MCP] = (0.0, 0.5, 0.0)
     landmarks[THUMB_TIP] = (0.3, 0.3, 0.0)
     landmarks[INDEX_FINGER_TIP] = (0.31, 0.3, 0.0)
+    landmarks[MIDDLE_FINGER_TIP] = (0.0, 0.9, 0.0)  # extendido, lejos de la muñeca
 
     assert is_pinching(landmarks) is True
 
@@ -79,6 +80,21 @@ def test_is_pinching_false_when_palm_size_is_zero():
     landmarks[MIDDLE_FINGER_MCP] = (0.0, 0.0, 0.0)
     landmarks[THUMB_TIP] = (0.0, 0.0, 0.0)
     landmarks[INDEX_FINGER_TIP] = (0.0, 0.0, 0.0)
+
+    assert is_pinching(landmarks) is False
+
+
+def test_is_pinching_false_when_it_looks_like_a_closed_fist():
+    # En un puño natural el pulgar también queda muy cerca del índice
+    # curvado -- geométricamente casi idéntico a un pellizco -- pero el
+    # dedo medio queda curvado (no extendido), a diferencia de un pellizco
+    # intencional.
+    landmarks = make_landmarks()
+    landmarks[WRIST] = (0.0, 0.0, 0.0)
+    landmarks[MIDDLE_FINGER_MCP] = (0.0, 0.5, 0.0)
+    landmarks[THUMB_TIP] = (0.3, 0.3, 0.0)
+    landmarks[INDEX_FINGER_TIP] = (0.31, 0.3, 0.0)
+    landmarks[MIDDLE_FINGER_TIP] = (0.0, 0.45, 0.0)  # curvado
 
     assert is_pinching(landmarks) is False
 
