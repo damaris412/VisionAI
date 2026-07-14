@@ -91,8 +91,17 @@ def main() -> None:
         CameraStream(camera_index=0, width=1280, height=720, target_fps=30) as camera,
         HandTracker(max_num_hands=1) as tracker,
     ):
+        # start_time es la referencia de tiempo de TODA la sesión del
+        # HandTracker, no solo del loop principal: el HandLandmarker exige
+        # timestamps estrictamente crecientes durante toda su vida útil, así
+        # que la calibración tiene que usar esta misma referencia en vez de
+        # su propio reloj desde 0 (si no, el primer frame post-calibración
+        # llegaría con un timestamp menor y MediaPipe lo rechazaría).
+        start_time = time.monotonic()
         calibration = (
-            DEFAULT_CALIBRATION if args.skip_calibration else run_calibration(camera, tracker, window_name=window_name)
+            DEFAULT_CALIBRATION
+            if args.skip_calibration
+            else run_calibration(camera, tracker, start_time, window_name=window_name)
         )
 
         pinch_machine = GestureStateMachine(StateMachineConfig(confirm_frames=3, cooldown_frames=10))
@@ -101,8 +110,7 @@ def main() -> None:
         action_flash_remaining = 0
         action_flash_text = ""
 
-        start_time = time.monotonic()
-        last_fps_update = start_time
+        last_fps_update = time.monotonic()
         frames_since_update = 0
         display_fps = 0.0
 
