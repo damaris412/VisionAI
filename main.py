@@ -1,26 +1,47 @@
+import argparse
 import time
 
 import cv2
 
+from src.actions.controller import ActionController
 from src.capture.camera_stream import CameraStream
 from src.gestures.gesture_definitions import is_pinching
 from src.gestures.gesture_state_machine import GestureStateMachine, StateMachineConfig
+from src.profiles.profile_loader import load_profile
 from src.vision.hand_tracker import HandTracker
 from src.vision.landmark_utils import draw_hand
 
-WINDOW_NAME = "VisionAI - Paso 3: Gesto de pellizco"
-
 _HANDEDNESS_ES = {"Left": "Derecha", "Right": "Izquierda"}
-_CLICK_FLASH_FRAMES = 15
+_ACTION_FLASH_FRAMES = 15
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="VisionAI - control por gestos")
+    parser.add_argument(
+        "--profile",
+        default="mouse",
+        help="Perfil a cargar: mouse, presentation o media (default: mouse)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Imprime las acciones en vez de ejecutarlas (útil para probar sin disparar clics/teclas reales)",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
+    args = parse_args()
+    profile = load_profile(args.profile)
+    controller = ActionController(dry_run=args.dry_run)
+    window_name = f"VisionAI - Perfil: {profile.name}" + (" [dry-run]" if args.dry_run else "")
+
     with (
         CameraStream(camera_index=0, width=1280, height=720, target_fps=30) as camera,
         HandTracker(max_num_hands=1) as tracker,
     ):
         pinch_machine = GestureStateMachine(StateMachineConfig(confirm_frames=3, cooldown_frames=10))
-        click_flash_remaining = 0
+        action_flash_remaining = 0
 
         start_time = time.monotonic()
         last_fps_update = start_time
@@ -45,8 +66,12 @@ def main() -> None:
 
             fired = pinch_machine.update(active=hand is not None and is_pinching(hand.landmarks))
             if fired:
-                click_flash_remaining = _CLICK_FLASH_FRAMES
-                print("CLIC (pellizco detectado)")
+                action_name = profile.action_for("pinch")
+                if action_name:
+                    controller.execute(action_name)
+                    prefix = "[dry-run] " if args.dry_run else ""
+                    print(f"{prefix}[{profile.name}] pellizco -> {action_name}")
+                action_flash_remaining = _ACTION_FLASH_FRAMES
 
             if hand is not None:
                 draw_hand(image, hand.landmarks)
@@ -62,17 +87,17 @@ def main() -> None:
                     2,
                 )
 
-            if click_flash_remaining > 0:
+            if action_flash_remaining > 0:
                 cv2.putText(
                     image,
-                    "CLIC!",
-                    (image.shape[1] // 2 - 90, 100),
+                    "ACCION!",
+                    (image.shape[1] // 2 - 120, 100),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     2.0,
                     (0, 0, 255),
                     4,
                 )
-                click_flash_remaining -= 1
+                action_flash_remaining -= 1
 
             frames_since_update += 1
             now = time.monotonic()
@@ -83,14 +108,14 @@ def main() -> None:
 
             cv2.putText(
                 image,
-                f"FPS: {display_fps:.1f}  |  gesto: {pinch_machine.state.value}  |  descartados: {camera.dropped_frames}",
+                f"FPS: {display_fps:.1f}  |  perfil: {profile.name}  |  gesto: {pinch_machine.state.value}  |  descartados: {camera.dropped_frames}",
                 (20, 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
+                0.6,
                 (0, 255, 0),
                 2,
             )
-            cv2.imshow(WINDOW_NAME, image)
+            cv2.imshow(window_name, image)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
