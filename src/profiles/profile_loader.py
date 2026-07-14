@@ -13,6 +13,7 @@ class Profile:
     name: str
     description: str
     gestures: dict[str, str]  # nombre de gesto -> nombre de acción
+    cursor_control: bool = False  # si True, el índice mueve el cursor del sistema
 
     def action_for(self, gesture: str) -> str | None:
         return self.gestures.get(gesture)
@@ -30,4 +31,5 @@ def load_profile(profile_name: str) -> Profile:
         name=data["name"],
         description=data.get("description", ""),
         gestures=data.get("gestures", {}),
+        cursor_control=data.get("cursor_control", False),
     )

@@ -1,4 +1,5 @@
 name: mouse
-description: Control de mouse - pellizco para clic izquierdo
+description: Control de mouse - indice para mover el cursor, pellizco para clic izquierdo
+cursor_control: true
 gestures:
   pinch: mouse_click_left
