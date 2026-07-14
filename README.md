@@ -8,7 +8,7 @@ En desarrollo iterativo. Progreso actual:
 
 - [x] **Fase 0-1**: Entorno + captura de video en hilo dedicado (productor-consumidor, sin acumulación de lag)
 - [x] **Fase 2**: Detección de manos y landmarks (MediaPipe HandLandmarker, Tasks API)
-- [ ] Fase 3: Máquina de estados para reconocimiento de gestos
+- [x] **Fase 3**: Máquina de estados para reconocimiento de gestos (gesto de pellizco -> clic)
 - [ ] Fase 4: Sistema de perfiles (YAML) y mapeo de acciones
 - [ ] Fase 5: Detección de aplicación activa y cambio automático de perfil
 - [ ] Fase 6: HUD visual, calibración de usuario, suavizado de cursor
@@ -34,6 +34,16 @@ Cada gesto detectado se emite como un evento desacoplado de la acción que dispa
 detectar 21 puntos clave por mano. El modelo entrenado (~8 MB) se descarga
 automáticamente en `models/` la primera vez que se ejecuta — no se versiona en
 git, igual que los pesos de cualquier modelo de ML.
+
+## Reconocimiento de gestos
+
+`src/gestures/gesture_state_machine.py` filtra la señal ruidosa por frame
+(IDLE → CANDIDATE → CONFIRMED → COOLDOWN) para que un gesto sostenido dispare
+un único evento en vez de decenas mientras tiembla la mano. `gesture_definitions.py`
+define las reglas geométricas sobre los landmarks; el primer gesto implementado
+es **pellizco (pulgar + índice) → clic**, con la distancia normalizada por el
+tamaño de la palma para que el umbral no dependa de qué tan cerca está la mano
+de la cámara.
 
 ## Requisitos
 
