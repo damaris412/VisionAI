@@ -19,6 +19,13 @@ from src.vision.landmark_utils import draw_hand
 
 _HANDEDNESS_ES = {"Left": "Derecha", "Right": "Izquierda"}
 _ACTION_FLASH_FRAMES = 15
+_ACTION_LABELS_ES = {
+    "mouse_click_left": "CLIC IZQUIERDO",
+    "mouse_click_right": "CLIC DERECHO",
+    "presentation_next_slide": "SIGUIENTE DIAPOSITIVA",
+    "presentation_previous_slide": "DIAPOSITIVA ANTERIOR",
+    "media_play_pause": "PLAY / PAUSA",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -92,6 +99,7 @@ def main() -> None:
         swipe_detector = SwipeDetector()
         cursor_smoother = CursorSmoother()
         action_flash_remaining = 0
+        action_flash_text = ""
 
         start_time = time.monotonic()
         last_fps_update = start_time
@@ -129,7 +137,8 @@ def main() -> None:
                     controller.execute(action_name)
                     prefix = "[dry-run] " if args.dry_run else ""
                     print(f"{prefix}[{profile.name}] pellizco -> {action_name}")
-                action_flash_remaining = _ACTION_FLASH_FRAMES
+                    action_flash_text = _ACTION_LABELS_ES.get(action_name, action_name.replace("_", " ").upper())
+                    action_flash_remaining = _ACTION_FLASH_FRAMES
 
             # No consideramos la mano "abierta" para el swipe mientras hay un
             # pellizco sostenido (un "OK" con los demás dedos extendidos
@@ -145,7 +154,8 @@ def main() -> None:
                     controller.execute(action_name)
                     prefix = "[dry-run] " if args.dry_run else ""
                     print(f"{prefix}[{profile.name}] {gesture_name} -> {action_name}")
-                action_flash_remaining = _ACTION_FLASH_FRAMES
+                    action_flash_text = _ACTION_LABELS_ES.get(action_name, action_name.replace("_", " ").upper())
+                    action_flash_remaining = _ACTION_FLASH_FRAMES
 
             # cursor_control mueve el cursor con solo tener una mano visible
             # (perfil mouse); pointer_control (perfil presentation) exige
@@ -161,7 +171,7 @@ def main() -> None:
                 overlay.draw_hand_label(image, (wrist_x_px, wrist_y_px), label, hand.score)
 
             if action_flash_remaining > 0:
-                overlay.draw_action_flash(image)
+                overlay.draw_action_flash(image, action_flash_text)
                 action_flash_remaining -= 1
 
             frames_since_update += 1
