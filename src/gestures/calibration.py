@@ -37,7 +37,7 @@ def run_calibration(
     camera: CameraStream,
     tracker: HandTracker,
     start_time: float,
-    duration_s: float = 4.0,
+    duration_s: float = 6.0,
     window_name: str = "VisionAI - Calibracion",
 ) -> CalibrationResult:
     """Guía al usuario a mover el índice por su zona cómoda de movimiento
@@ -72,12 +72,26 @@ def run_calibration(
             min_x, max_x = min(min_x, x), max(max_x, x)
             min_y, max_y = min(min_y, y), max(max_y, y)
             seen_any = True
+            # Feedback en vivo del punto exacto que se está registrando, para
+            # que el usuario vea si el tracking sigue bien a su dedo antes de
+            # depender de esta calibración durante toda la sesión.
+            point_px = (int(x * image.shape[1]), int(y * image.shape[0]))
+            cv2.circle(image, point_px, 10, (255, 255, 0), 2)
 
         remaining = duration_s - (time.monotonic() - calibration_start)
         cv2.putText(
             image,
-            f"Calibrando: mueve el indice por tu zona comoda ({remaining:.1f}s)",
+            "Calibrando: recorre con el indice las 4 esquinas del area donde",
             (20, 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 255),
+            2,
+        )
+        cv2.putText(
+            image,
+            f"vas a apuntar durante la presentacion ({remaining:.1f}s)",
+            (20, 75),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,
             (0, 255, 255),
